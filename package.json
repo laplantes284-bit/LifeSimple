@@ -1,0 +1,14 @@
+{
+  "name": "life-simple",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Life Simple - money and to-do tracker for life's big moments",
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/core": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "latest",
+    "@capacitor/cli": "latest"
+  }
+}

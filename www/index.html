@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2E7D6B">
+<title>Life Simple</title>
+<style>
+  :root{
+    --brand:#2E7D6B; --brand-dark:#235f52; --brand-soft:#e6f2ef;
+    --bg:#f6f7f5; --card:#fff; --ink:#1d2523; --muted:#66706d; --line:#e3e7e5;
+    --good:#2E7D6B; --bad:#c0442f;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{position:sticky;top:0;z-index:5;background:var(--brand);color:#fff;
+    padding:calc(env(safe-area-inset-top) + 14px) 16px 14px;display:flex;align-items:center;gap:10px}
+  header h1{margin:0;font-size:20px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header button{background:none;border:0;color:#fff;font-size:24px;padding:4px 8px;margin-left:-8px;cursor:pointer}
+  main{padding:16px;padding-bottom:calc(env(safe-area-inset-bottom) + 40px);max-width:640px;margin:0 auto}
+  .intro{color:var(--muted);margin:0 0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+  .card h2{margin:0 0 10px;font-size:16px;color:var(--brand)}
+  .event{display:flex;align-items:center;gap:12px;cursor:pointer;text-decoration:none;color:inherit}
+  .event .emo{font-size:28px;width:44px;height:44px;display:grid;place-items:center;background:var(--brand-soft);border-radius:12px;flex:none}
+  .event .info{flex:1;min-width:0}
+  .event .name{font-weight:600}
+  .event .meta{font-size:13px;color:var(--muted)}
+  .bar{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--brand)}
+  .bar i.over{background:var(--bad)}
+  .chev{color:var(--muted);font-size:20px}
+  .summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
+  .summary div{background:var(--brand-soft);border-radius:10px;padding:8px 4px}
+  .summary small{display:block;font-size:12px;color:var(--muted)}
+  .summary b{font-size:15px}
+  .neg{color:var(--bad)} .pos{color:var(--good)}
+  label.lbl{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+  input,textarea{font:inherit;color:inherit;border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;background:#fff}
+  input:focus,textarea:focus{outline:2px solid var(--brand);border-color:transparent}
+  .money{position:relative}
+  .money::before{content:"$";position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .money input{padding-left:22px}
+  .item{border-top:1px solid var(--line);padding:10px 0}
+  .item:first-of-type{border-top:0;padding-top:0}
+  .item-top{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+  .item-top input{border:0;padding:4px 0;font-weight:600;border-radius:0;border-bottom:1px dashed transparent}
+  .item-top input:focus{outline:0;border-bottom-color:var(--brand)}
+  .x{background:none;border:0;color:var(--muted);font-size:20px;padding:4px 6px;cursor:pointer;flex:none}
+  .row3{display:grid;grid-template-columns:1fr 1fr 0.9fr;gap:8px;align-items:end}
+  .diff{font-size:13px;text-align:right;padding-bottom:10px}
+  .diff small{display:block;color:var(--muted)}
+  .totals{border-top:2px solid var(--brand);margin-top:6px;padding-top:10px;display:flex;justify-content:space-between;font-weight:700}
+  .add{width:100%;margin-top:10px;background:none;border:1px dashed var(--brand);color:var(--brand);
+    border-radius:10px;padding:10px;font:inherit;font-weight:600;cursor:pointer}
+  .task{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+  .task:first-of-type{border-top:0}
+  .task input[type=checkbox]{width:24px;height:24px;flex:none;accent-color:var(--brand)}
+  .task input[type=text]{border:0;padding:4px 0;border-radius:0}
+  .task input[type=text]:focus{outline:0;border-bottom:1px dashed var(--brand)}
+  .task.done input[type=text]{text-decoration:line-through;color:var(--muted)}
+  .hint{font-size:13px;color:var(--muted);margin:-4px 0 10px}
+  .reset{background:none;border:0;color:var(--bad);font:inherit;padding:10px;width:100%;cursor:pointer}
+  .steps{margin:0;padding-left:20px;color:var(--muted);font-size:14px}
+  .steps li{margin:2px 0}
+</style>
+</head>
+<body>
+<header>
+  <button id="back" aria-label="Back" hidden>&#8592;</button>
+  <h1 id="title">Life Simple</h1>
+</header>
+<main id="app"></main>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = "lifesimple.v1";
+
+  // Same events, budget items and checklists as the Life Simple Tracker spreadsheet.
+  var DEFAULTS = [
+    ["wedding","Wedding","💍",["Venue","Catering","Photographer","Attire","Rings","Flowers","Music/DJ"],
+      ["Set total budget","Pick a date","Book venue","Book photographer","Send invites","Final headcount","Confirm vendors"]],
+    ["baby","Baby","🍼",["Crib & bedding","Car seat","Stroller","Diapers & wipes","Clothes","Medical costs","Parental leave gap"],
+      ["Set baby budget","Pick a doctor","Set up nursery","Install car seat","Pack hospital bag","Sort parental leave"]],
+    ["home","First Home","🏡",["Down payment","Closing costs","Home inspection","Lawyer fees","Moving costs","Furniture","Repairs"],
+      ["Check credit","Get pre-approved","Find a realtor","Make an offer","Book inspection","Close the deal"]],
+    ["move","Big Move","📦",["Movers/truck","Packing supplies","Deposit","Travel","Utilities setup","Storage","New essentials"],
+      ["Set move date","Book movers","Start packing","Change address","Set up utilities","Clean old place"]],
+    ["grad","Graduation","🎓",["Gown & fees","Party","Photos","Travel for family","Gifts","Celebration dinner"],
+      ["Order gown","Book photos","Plan party","Send invites","Thank-you notes"]],
+    ["retire","Retirement","🌅",["Monthly living costs","Health coverage","Travel","Hobbies","Home changes","Emergency fund"],
+      ["Review savings","Pick retirement date","Plan income","Review coverage","Tell employer"]],
+    ["job","New Job","💼",["Work clothes","Commute","Equipment","Lunches","Relocation","Training/courses"],
+      ["Review offer","Set up direct deposit","Plan commute","Prep first week","Update budget"]],
+    ["mine","My Event","⭐",["Item 1","Item 2","Item 3","Item 4","Item 5","Item 6"],
+      ["Task 1","Task 2","Task 3","Task 4","Task 5"]]
+  ];
+
+  function freshEvent(d){
+    return {id:d[0], name:d[1], emoji:d[2], moneyIn:0,
+      items:d[3].map(function(n){return {name:n, planned:0, actual:0};}),
+      tasks:d[4].map(function(t){return {text:t, done:false};}),
+      tips:""};
+  }
+  function freshState(){ return {events: DEFAULTS.map(freshEvent)}; }
+
+  var state;
+  try { state = JSON.parse(localStorage.getItem(KEY)) || freshState(); }
+  catch(e){ state = freshState(); }
+
+  var saveTimer;
+  function save(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+    }, 150);
+  }
+
+  var fmt = new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD",currencyDisplay:"narrowSymbol"});
+  function money(n){ return fmt.format(n || 0); }
+  function num(v){ var n = parseFloat(String(v).replace(/[^0-9.\-]/g,"")); return isFinite(n) ? n : 0; }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+  function totals(ev){
+    var p=0,a=0;
+    ev.items.forEach(function(i){ p+=num(i.planned); a+=num(i.actual); });
+    return {planned:p, actual:a, diff:p-a, left:num(ev.moneyIn)-a,
+      done:ev.tasks.filter(function(t){return t.done;}).length};
+  }
+  function signCls(n){ return n<0 ? "neg" : "pos"; }
+
+  var app = document.getElementById("app");
+  var titleEl = document.getElementById("title");
+  var backBtn = document.getElementById("back");
+  backBtn.onclick = function(){ history.length > 1 ? history.back() : (location.hash = ""); };
+
+  // ---------- Start Here ----------
+  function renderHome(){
+    titleEl.textContent = "Life Simple";
+    backBtn.hidden = true;
+    var h = '<p class="intro">Your money and to-do tracker for life\'s big moments.</p>' +
+      '<div class="card"><h2>How it works</h2><ol class="steps">' +
+      '<li>Pick your event below.</li>' +
+      '<li>Enter Money In and Planned costs, then Actual as you spend.</li>' +
+      '<li>Tick off the checklist as you go.</li>' +
+      '<li>Optional: add tips for yourself or to share.</li>' +
+      '<li>Rename "My Event" for anything else you\'re planning.</li></ol></div>';
+    state.events.forEach(function(ev){
+      var t = totals(ev);
+      var base = num(ev.moneyIn) || t.planned;
+      var pct = base ? Math.min(100, t.actual/base*100) : 0;
+      var over = base && t.actual > base;
+      h += '<a class="card event" href="#/' + ev.id + '">' +
+        '<div class="emo">' + ev.emoji + '</div>' +
+        '<div class="info"><div class="name">' + esc(ev.name) + '</div>' +
+        '<div class="meta">' + money(t.actual) + ' spent' + (base ? ' of ' + money(base) : '') +
+        ' · ' + t.done + '/' + ev.tasks.length + ' done</div>' +
+        '<div class="bar"><i class="' + (over?'over':'') + '" style="width:' + pct + '%"></i></div></div>' +
+        '<div class="chev">&rsaquo;</div></a>';
+    });
+    app.innerHTML = h;
+  }
+
+  // ---------- Event screen ----------
+  function renderEvent(ev){
+    titleEl.textContent = ev.emoji + " " + ev.name;
+    backBtn.hidden = false;
+    var h = '';
+    if (ev.id === "mine") {
+      h += '<div class="card"><label class="lbl" for="evname">Event name</label>' +
+        '<input id="evname" type="text" value="' + esc(ev.name) + '"></div>';
+    }
+    h += '<div class="card"><label class="lbl" for="moneyin">Money In (what you have for this)</label>' +
+      '<div class="money"><input id="moneyin" inputmode="decimal" placeholder="0" value="' + (num(ev.moneyIn)||"") + '"></div></div>';
+
+    h += '<div class="card"><div class="summary" id="summary"></div></div>';
+
+    h += '<div class="card"><h2>Budget</h2><div id="items">';
+    ev.items.forEach(function(it, i){
+      h += '<div class="item" data-i="' + i + '">' +
+        '<div class="item-top"><input type="text" data-f="name" value="' + esc(it.name) + '" aria-label="Budget item">' +
+        '<button class="x" data-del="' + i + '" aria-label="Remove item">&times;</button></div>' +
+        '<div class="row3">' +
+        '<div><label class="lbl">Planned</label><div class="money"><input inputmode="decimal" data-f="planned" placeholder="0" value="' + (num(it.planned)||"") + '"></div></div>' +
+        '<div><label class="lbl">Actual</label><div class="money"><input inputmode="decimal" data-f="actual" placeholder="0" value="' + (num(it.actual)||"") + '"></div></div>' +
+        '<div class="diff" data-diff></div></div></div>';
+    });
+    h += '</div><div class="totals"><span>Total<br><small style="font-weight:400;color:var(--muted)">planned / actual</small></span><span id="tot"></span></div>' +
+      '<button class="add" id="additem">+ Add budget item</button></div>';
+
+    h += '<div class="card"><h2>Checklist</h2><div id="tasks">';
+    ev.tasks.forEach(function(t, i){
+      h += '<div class="task' + (t.done?' done':'') + '" data-t="' + i + '">' +
+        '<input type="checkbox" ' + (t.done?'checked':'') + ' aria-label="Done">' +
+        '<input type="text" value="' + esc(t.text) + '" aria-label="Task">' +
+        '<button class="x" data-tdel="' + i + '" aria-label="Remove task">&times;</button></div>';
+    });
+    h += '</div><button class="add" id="addtask">+ Add task</button></div>';
+
+    h += '<div class="card"><h2>My tips</h2><p class="hint">Optional. Keep them private or share them.</p>' +
+      '<textarea id="tips" rows="4" placeholder="Write anything you learned...">' + esc(ev.tips) + '</textarea></div>';
+
+    h += '<button class="reset" id="reset">Reset this event</button>';
+    app.innerHTML = h;
+    window.scrollTo(0,0);
+    refresh(ev);
+
+    // wiring
+    var nm = document.getElementById("evname");
+    if (nm) nm.oninput = function(){ ev.name = nm.value || "My Event"; titleEl.textContent = ev.emoji + " " + ev.name; save(); };
+    document.getElementById("moneyin").oninput = function(e){ ev.moneyIn = num(e.target.value); refresh(ev); save(); };
+    document.getElementById("items").oninput = function(e){
+      var row = e.target.closest(".item"); if(!row) return;
+      var it = ev.items[+row.dataset.i], f = e.target.dataset.f;
+      it[f] = f === "name" ? e.target.value : num(e.target.value);
+      refresh(ev); save();
+    };
+    document.getElementById("items").onclick = function(e){
+      var d = e.target.dataset.del;
+      if (d !== undefined) { ev.items.splice(+d,1); save(); renderEvent(ev); }
+    };
+    document.getElementById("additem").onclick = function(){
+      ev.items.push({name:"New item", planned:0, actual:0}); save(); renderEvent(ev);
+      var ins = document.querySelectorAll('#items .item-top input'); var last = ins[ins.length-1];
+      if (last) { last.focus(); last.select(); }
+    };
+    document.getElementById("tasks").onchange = function(e){
+      if (e.target.type !== "checkbox") return;
+      var row = e.target.closest(".task"); ev.tasks[+row.dataset.t].done = e.target.checked;
+      row.classList.toggle("done", e.target.checked); refresh(ev); save();
+    };
+    document.getElementById("tasks").oninput = function(e){
+      if (e.target.type !== "text") return;
+      ev.tasks[+e.target.closest(".task").dataset.t].text = e.target.value; save();
+    };
+    document.getElementById("tasks").onclick = function(e){
+      var d = e.target.dataset.tdel;
+      if (d !== undefined) { ev.tasks.splice(+d,1); save(); renderEvent(ev); }
+    };
+    document.getElementById("addtask").onclick = function(){
+      ev.tasks.push({text:"New task", done:false}); save(); renderEvent(ev);
+      var ins = document.querySelectorAll('#tasks input[type=text]'); var last = ins[ins.length-1];
+      if (last) { last.focus(); last.select(); }
+    };
+    document.getElementById("tips").oninput = function(e){ ev.tips = e.target.value; save(); };
+    document.getElementById("reset").onclick = function(){
+      if (!window.confirm("Clear everything in " + ev.name + "?")) return;
+      var d = DEFAULTS.filter(function(x){return x[0]===ev.id;})[0];
+      var i = state.events.indexOf(ev); state.events[i] = freshEvent(d); save(); renderEvent(state.events[i]);
+    };
+  }
+
+  function refresh(ev){
+    var t = totals(ev);
+    document.getElementById("summary").innerHTML =
+      '<div><small>Planned</small><b>' + money(t.planned) + '</b></div>' +
+      '<div><small>Actual</small><b>' + money(t.actual) + '</b></div>' +
+      '<div><small>Left over</small><b class="' + signCls(t.left) + '">' + money(t.left) + '</b></div>';
+    document.getElementById("tot").innerHTML = money(t.planned) + ' / ' + money(t.actual);
+    document.querySelectorAll("#items .item").forEach(function(row){
+      var it = ev.items[+row.dataset.i], d = num(it.planned) - num(it.actual);
+      row.querySelector("[data-diff]").innerHTML = '<small>Difference</small><b class="' + signCls(d) + '">' + money(d) + '</b>';
+    });
+  }
+
+  function route(){
+    var id = location.hash.replace(/^#\/?/, "");
+    var ev = state.events.filter(function(e){return e.id===id;})[0];
+    ev ? renderEvent(ev) : renderHome();
+  }
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
+</body>
+</html>

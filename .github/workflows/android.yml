@@ -1,0 +1,78 @@
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install packages
+        run: npm install
+
+      - name: Create Android project
+        run: |
+          npx cap add android
+          npx capacitor-assets generate --android --iconBackgroundColor '#2E7D6B' --splashBackgroundColor '#2E7D6B'
+          npx cap sync android
+
+      - name: Set version (versionCode = build number)
+        run: |
+          sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i -E "s/versionName \"[^\"]+\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -E "versionCode|versionName" android/app/build.gradle
+
+      - name: Build test APK (install directly on a phone)
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Build Play Store bundle (AAB)
+        working-directory: android
+        run: ./gradlew bundleRelease
+
+      - name: Sign Play Store bundle
+        if: env.HAS_KEY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > upload.jks
+          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore upload.jks -storepass "$KEYSTORE_PASSWORD" \
+            android/app/build/outputs/bundle/release/app-release.aab "$KEY_ALIAS"
+          jarsigner -verify android/app/build/outputs/bundle/release/app-release.aab | tail -1
+          rm upload.jks
+
+      - name: Rename outputs
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/LifeSimple-test.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab out/LifeSimple-playstore.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LifeSimple-test-APK
+          path: out/LifeSimple-test.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LifeSimple-PlayStore-AAB
+          path: out/LifeSimple-playstore.aab
